@@ -6,7 +6,7 @@ import FormInput from "../components/FormInput";
 import Card from "../components/Card";
 import { Link, useNavigate } from "react-router-dom";
 import {auth} from "../firebase";
-import {signInWithEmailAndPassword} from "firebase/auth"
+import {signInWithEmailAndPassword} from "firebase/auth";
 
 const Login = (props) => {
   const [error, setError] = useState("");

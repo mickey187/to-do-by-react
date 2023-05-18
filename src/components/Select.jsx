@@ -1,23 +1,29 @@
 import React from "react";
 
-const FormInput = ({ inputType, placeholder, id, name, onChange, onBlur, value, validationMessage }) => {
+const Select = ({
+  id,
+  name,
+  onChange,
+  onBlur,
+  value,
+  validationMessage,
+  children,
+}) => {
   return (
     <div className="p-3">
-      <input
+      <select
         id={id}
         name={name}
-        type={inputType}
         className="form-control"
-        placeholder={placeholder}
         onChange={onChange}
         onBlur={onBlur}
         value={value}
-      />
+      >
+        {children}
+      </select>
       {validationMessage && <small className="form-text text-danger ps-2">{validationMessage}</small>}
-
-      
     </div>
   );
 };
 
-export default FormInput;
+export default Select;

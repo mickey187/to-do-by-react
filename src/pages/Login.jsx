@@ -51,7 +51,7 @@ const Login = (props) => {
       <div className="col-md-6 col-sm-4">
         <form onSubmit={formik.handleSubmit}>
           <Card cardHeader="Login">
-            <div className="pb-0 mb-0">
+            <div className="ps-5 pe-5 pt-5 ">
               <FormInput
                 inputType="email"
                 placeholder="Email"

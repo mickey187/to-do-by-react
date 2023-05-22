@@ -5,10 +5,10 @@ import { AuthContext } from "../context/AuthContext";
 const PrivateRoute = ({children}) => {
     const currentUser = useContext(AuthContext);
   
-    if (currentUser === null) {
+    if (!!currentUser === null) {
         console.log("Invalid currentUser null");
         return <Navigate to="/login" />
-    } else if(currentUser === undefined){
+    } else if(!!currentUser === undefined){
         console.log("Invalid currentUser Undefined");
         return <Navigate to="/login" />
     } else{

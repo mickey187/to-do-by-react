@@ -6,6 +6,8 @@ import Home from "../pages/Home";
 import AddTask from "../pages/AddTask";
 // import { AuthContext } from "../context/AuthContext";
 import PrivateRoute from "./PrivateRoute";
+import TodayTask from "../pages/TodayTask";
+import UpcomingTask from "../pages/UpcomingTask";
 
 const AppRoutes = () => {
   // const currentUser = useContext(AuthContext);
@@ -14,9 +16,11 @@ const AppRoutes = () => {
       <Route
         exact
         path="/"
-        element={<PrivateRoute>
-          <Home />
-        </PrivateRoute>}
+        element={
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        }
       ></Route>
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
@@ -33,6 +37,23 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <AddTask />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/today"
+        element={
+          <PrivateRoute>
+            <TodayTask />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/upcoming"
+        element={
+          <PrivateRoute>
+            <UpcomingTask />
           </PrivateRoute>
         }
       />

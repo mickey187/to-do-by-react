@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
@@ -13,7 +13,8 @@ import { addDoc, collection } from "firebase/firestore";
 import { AuthContext } from "../context/AuthContext";
 
 const AddTask = () => {
-  const [error, setError] = useState(null);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
   const Auth = useContext(AuthContext);
   const initialValues = {
     title: "",
@@ -29,8 +30,8 @@ const AddTask = () => {
     priority: Yup.string().required("Priority is required"),
   });
 
-  const addTaskHandler = async (values, { setSubmitting }) => {
-    setError(null);
+  const addTaskHandler = async (values, { setSubmitting, resetForm }) => {
+    
     try {
       const docRef = await addDoc(collection(firestore, "tasks"), {
         userId: auth.currentUser.uid,
@@ -38,11 +39,15 @@ const AddTask = () => {
         description: values.description,
         dueDate: values.dueDate,
         priority: values.priority,
-        status: "pending"
+        status: "pending",
       });
       console.log("Document written with ID: ", docRef.id);
+      
+      setShowSuccessAlert(true);
+      resetForm();
     } catch (error) {
-      setError(error);
+      
+      setShowErrorAlert(true);
       console.log(error);
     } finally {
       setSubmitting(false);
@@ -55,6 +60,19 @@ const AddTask = () => {
     onSubmit: addTaskHandler,
   });
 
+
+  useEffect(() => {
+    if (showSuccessAlert || showErrorAlert) {
+      const timeout = setTimeout(() => {
+        setShowSuccessAlert(false);
+        setShowErrorAlert(false);
+      }, 5000);
+
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+  }, [showSuccessAlert, showErrorAlert]);
   return (
     <>
       <Navbar>
@@ -84,10 +102,24 @@ const AddTask = () => {
           </Link>
         </li>
       </Navbar>
-      <div className="row d-flex justify-content-center  mt-5">
-        <div className="col-6">
+      <div className="row d-flex justify-content-end mt-3 me-3">
+        <div className="col-4">      {showSuccessAlert && (
+        <div className="alert alert-success alert-dismissible fade show" role="alert">
+          Task Added Successfully!
+        </div>
+      )}
+
+      {showErrorAlert && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          Task could not be added. Please try again!
+        </div>
+      )}</div>
+      </div>
+
+      <div className="row d-flex justify-content-center mt-3">
+        <div className="col-6 ">
           <Card cardHeader="Add Task">
-            <form onSubmit={formik.handleSubmit}>
+            <form onSubmit={formik.handleSubmit} className="ps-5 pe-5 pt-5">
               <div className="pb-0 mb-0">
                 <FormInput
                   inputType="text"
@@ -120,7 +152,7 @@ const AddTask = () => {
                 />
 
                 <FormInput
-                  inputType="date"
+                  inputType="datetime-local"
                   placeholder=""
                   id="dueDate"
                   name="dueDate"

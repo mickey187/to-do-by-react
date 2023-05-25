@@ -14,7 +14,7 @@ const Select = ({
       <select
         id={id}
         name={name}
-        className="form-control"
+        className="form-control form-select"
         onChange={onChange}
         onBlur={onBlur}
         value={value}

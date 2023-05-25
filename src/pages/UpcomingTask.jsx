@@ -1,15 +1,28 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { firestore } from "../firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { format, startOfDay, addDays } from "date-fns";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import { AuthContext } from "../context/AuthContext";
 
 const UpcomingTask = () => {
   const [upComingTaskList, setUpcomingTaskList] = useState([]);
   const [error, setError] = useState(false);
+  const navigate = useNavigate();
+  const MySwal = withReactContent(Swal);
+  const currentUser = useContext(AuthContext); 
 
   const formDateTime = (datetimeString) => {
     const datetime = new Date(datetimeString);
@@ -41,7 +54,11 @@ const UpcomingTask = () => {
 
     // Firestore query to fetch upcoming tasks excluding today
     const tasksCollectionRef = collection(firestore, "tasks");
-    const q = query(tasksCollectionRef, where("dueDate", ">=", tomorrowFormat));
+    const q = query(
+      tasksCollectionRef,
+      where("dueDate", ">=", tomorrowFormat),
+      where("userId", "==", currentUser.uid)
+    );
 
     // Execute the query
     const querySnapshot = await getDocs(q);
@@ -59,7 +76,7 @@ const UpcomingTask = () => {
         // Process the task as needed
         console.log(task);
         list.push({
-          key: task.id,
+          key: doc.id,
           userId: task.userId,
           title: task.title,
           description: task.description,
@@ -69,6 +86,49 @@ const UpcomingTask = () => {
         });
       });
       setUpcomingTaskList(list);
+    }
+  };
+
+  const editTaskHandler = (task) => {
+    const source = {
+      source: "UpcomingTaskComponent",
+    };
+    navigate(`/edit-task/${task.key}`, {
+      state: { task, source },
+    });
+  };
+
+  const deleteTaskHandler = async (taskId) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Get a reference to the task document
+        const taskRef = doc(firestore, "tasks", taskId);
+
+        // Delete the task document
+        await deleteDoc(taskRef);
+
+        console.log("Task deleted successfully");
+        Swal.fire("Deleted!", "Your file has been deleted.", "success");
+
+        // Update the unFilteredTaskList state by removing the deleted task
+        setUpcomingTaskList((prevList) =>
+          prevList.filter((task) => task.key !== taskId)
+        );
+        fetchUpcomingTasks();
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        Swal.fire("Error", "Failed to delete task", "error");
+      }
     }
   };
 
@@ -101,22 +161,25 @@ const UpcomingTask = () => {
       >
         <div className="d-flex w-100 justify-content-between">
           <h5 className="mb-1">Title: {task.title}</h5>
-          <small>
-            <strong>
-              Priority:{" "}
-              <span
-                className={`${
-                  task.priority === "high"
-                    ? "bg-danger"
-                    : task.priority === "medium"
-                    ? "bg-warning"
-                    : "bg-success"
-                } text-light p-1 `}
+          <div className="d-flex justify-content-end">
+            <div className="ms-2 me-2">
+              <button
+                className="btn btn-sm btn-info float-end"
+                onClick={editTaskHandler.bind(null, task)}
               >
-                {task.priority}
-              </span>
-            </strong>
-          </small>
+                <FontAwesomeIcon icon={"edit"} />
+              </button>
+            </div>
+
+            <div className="me-2">
+              <button
+                className="btn btn-sm btn-danger float-end"
+                onClick={deleteTaskHandler.bind(null, task.key)}
+              >
+                <FontAwesomeIcon icon={"trash-can"} />
+              </button>
+            </div>
+          </div>
         </div>
         <p className="mb-1">
           <strong>Description: </strong>
@@ -126,22 +189,44 @@ const UpcomingTask = () => {
           <strong>Due Date: </strong>
           {task.dueDate}
         </p>
-        <p className="mb-1">
+
+        <div className="mb-3 mt-3">
           <strong>
-            Staus:{" "}
+            Priority:{" "}
             <span
               className={`${
-                task.status === "pending"
+                task.priority === "high"
+                  ? "bg-danger"
+                  : task.priority === "medium"
                   ? "bg-warning"
-                  : task.status === "in-progress"
-                  ? "bg-primary"
                   : "bg-success"
-              } text-light p-1 `}
+              } text-light p-1 text-sm`}
             >
-              {task.status}
+              {task.priority}
             </span>
           </strong>
-        </p>
+        </div>
+
+        <div className="mb-3 mt-3">
+          <div className="row">
+            <div className="col-6">
+              <strong>
+                Status:{" "}
+                <span
+                  className={`${
+                    task.status === "pending"
+                      ? "bg-warning"
+                      : task.status === "in-progress"
+                      ? "bg-primary"
+                      : "bg-success"
+                  } text-light p-1 `}
+                >
+                  {task.status}
+                </span>
+              </strong>
+            </div>
+          </div>
+        </div>
         <div className="divider"></div>
       </div>
     ));

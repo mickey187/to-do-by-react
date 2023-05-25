@@ -11,7 +11,8 @@ import {
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 import withReactContent from "sweetalert2-react-content";
-import {useNavigate} from "react-router-dom"
+import {useNavigate, Link} from "react-router-dom"
+
 
 const Signup = () => {
   const [hasUserSignedUp, setHasUserSignedUp] = useState(null);
@@ -107,7 +108,7 @@ const Signup = () => {
         <div className="col-md-6">
           <form onSubmit={formik.handleSubmit}>
             <Card cardHeader="Signup">
-              <div className="pb-0 mb-0">
+              <div className="pb-0 mb-0 ">
                 <FormInput
                   inputType="text"
                   placeholder="Username"
@@ -183,6 +184,11 @@ const Signup = () => {
                   SIGNUP
                 </Button>
               </div>
+
+              
+            <div className="p-1 text-center mt-4">
+              Already have an account?<Link to="/login"> Login</Link>
+            </div>
             </Card>
           </form>
         </div>

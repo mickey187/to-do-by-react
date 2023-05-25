@@ -8,6 +8,7 @@ import AddTask from "../pages/AddTask";
 import PrivateRoute from "./PrivateRoute";
 import TodayTask from "../pages/TodayTask";
 import UpcomingTask from "../pages/UpcomingTask";
+import EditTask from "../pages/EditTask";
 
 const AppRoutes = () => {
   // const currentUser = useContext(AuthContext);
@@ -44,7 +45,7 @@ const AppRoutes = () => {
         path="/today"
         element={
           <PrivateRoute>
-            <TodayTask />
+            <TodayTask  />
           </PrivateRoute>
         }
       />
@@ -54,6 +55,15 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <UpcomingTask />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/edit-task/:taskId"
+        element={
+          <PrivateRoute>
+            <EditTask/>
           </PrivateRoute>
         }
       />

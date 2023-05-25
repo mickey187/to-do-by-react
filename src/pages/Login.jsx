@@ -5,8 +5,8 @@ import * as Yup from "yup";
 import FormInput from "../components/FormInput";
 import Card from "../components/Card";
 import { Link, useNavigate } from "react-router-dom";
-import {auth} from "../firebase";
-import {signInWithEmailAndPassword} from "firebase/auth";
+import { auth } from "../firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 const Login = (props) => {
   const [error, setError] = useState("");
@@ -28,10 +28,13 @@ const Login = (props) => {
 
   const loginSubmitHandler = async (values, { setSubmitting }) => {
     try {
-      const user = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
       console.log(user);
-      navigate('/');
-      
+      navigate("/");
     } catch (error) {
       setError(error.message);
       console.log(error.message);
@@ -80,18 +83,20 @@ const Login = (props) => {
                     ? `${formik.errors.password}`
                     : null
                 }
-              />
-            </div>
-            <div className="p-3 d-grid gap-2 mx-auto">
+              /><div className="d-grid gap-2 mx-auto ps-3 pe-3 pt-5">
               <Button
                 variant="primary"
                 buttonSize="block"
                 buttonType="submit"
-                isDiasbled={formik.isSubmitting}
+                isDisabled={formik.isSubmitting}
               >
                 LOGIN
               </Button>
             </div>
+            </div>
+
+            
+
             <div className="p-1 text-center mt-4">
               Don't have an account?<Link to="/signup"> Sign up for free</Link>
             </div>

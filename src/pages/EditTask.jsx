@@ -1,26 +1,33 @@
-import { useState, useContext, useEffect } from "react";
-import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { NavLink, useLocation, Link, useNavigate } from "react-router-dom";
+import Button from "../components/Button";
 import Card from "../components/Card";
+import FormInput from "../components/FormInput";
+import Select from "../components/Select";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import FormInput from "../components/FormInput";
-import Select from "../components/Select";
-import Button from "../components/Button";
 import { auth, firestore } from "../firebase";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, doc, updateDoc } from "firebase/firestore";
 import { AuthContext } from "../context/AuthContext";
+import { useState, useEffect } from "react";
 
-const AddTask = () => {
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [showErrorAlert, setShowErrorAlert] = useState(false);
-  const Auth = useContext(AuthContext);
+const EditTask = (props) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { task, source} = location.state;
+  console.log(source);
+
+  const [taskEdit, setTaskEdit] = useState(task);
+  const [successAlert, setSuccessAlert] = useState(false);
+  const [errorAlert, setErrorAlert] = useState(false);
+
   const initialValues = {
-    title: "",
-    description: "",
-    dueDate: "",
-    priority: "",
+    id: taskEdit.key,
+    title: taskEdit.title,
+    description: taskEdit.description,
+    dueDate: convertDateFormat(taskEdit.dueDate),
+    priority: taskEdit.priority,
   };
 
   const formValidationSchema = Yup.object().shape({
@@ -30,51 +37,58 @@ const AddTask = () => {
     priority: Yup.string().required("Priority is required"),
   });
 
-  const addTaskHandler = async (values, { setSubmitting, resetForm }) => {
-    
+  const editTaskHandler = async (values, { setSubmitting, resetForm }) => {
     try {
-      const docRef = await addDoc(collection(firestore, "tasks"), {
-        userId: auth.currentUser.uid,
-        title: values.title,
-        description: values.description,
-        dueDate: values.dueDate,
-        priority: values.priority,
-        status: "pending",
-      });
-      console.log("Document written with ID: ", docRef.id);
+      const taskDocRef = doc(firestore, "tasks", values.id);
+      await updateDoc(taskDocRef, values);
+      setSuccessAlert(true);
+      showAlert();
+      if (source.source === 'TodayTaskComponent') {
+        navigate("/today", { state: { editAlert: true } });
+      } else if(source.source === 'UpcomingTaskComponent'){
+        navigate("/upcoming", { state: { editAlert: true } });
+      }
       
-      setShowSuccessAlert(true);
-      resetForm();
     } catch (error) {
-      
-      setShowErrorAlert(true);
-      console.log(error);
-    } finally {
-      setSubmitting(false);
-    }
+      setErrorAlert(true);
+      showAlert();
+      console.error("Error updating task status:", error);
+    } 
   };
 
-  const formik = useFormik({
-    initialValues: initialValues,
-    validationSchema: formValidationSchema,
-    onSubmit: addTaskHandler,
-  });
+  function convertDateFormat(dateString) {
+    const date = new Date(dateString);
 
-  
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
 
+    const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
 
-  useEffect(() => {
-    if (showSuccessAlert || showErrorAlert) {
+    return formattedDate;
+  }
+
+  const showAlert = () => {
+     if (errorAlert) {
       const timeout = setTimeout(() => {
-        setShowSuccessAlert(false);
-        setShowErrorAlert(false);
+        setErrorAlert(false);
       }, 5000);
-
       return () => {
         clearTimeout(timeout);
       };
     }
-  }, [showSuccessAlert, showErrorAlert]);
+  };
+  useEffect(() => {
+    showAlert(); // Invoke showAlert function when component renders
+  }, [successAlert, errorAlert]);
+
+  const formik = useFormik({
+    initialValues: initialValues,
+    validationSchema: formValidationSchema,
+    onSubmit: editTaskHandler,
+  });
   return (
     <>
       <Navbar>
@@ -105,22 +119,20 @@ const AddTask = () => {
         </li>
       </Navbar>
       <div className="row d-flex justify-content-end mt-3 me-3">
-        <div className="col-4">      {showSuccessAlert && (
-        <div className="alert alert-success alert-dismissible fade show" role="alert">
-          Task Added Successfully!
+        <div className="col-4">
+          {errorAlert && (
+            <div
+              className="alert alert-danger alert-dismissible fade show"
+              role="alert"
+            >
+              Task could not be edited. Please try again!
+            </div>
+          )}
         </div>
-      )}
-
-      {showErrorAlert && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
-          Task could not be added. Please try again!
-        </div>
-      )}</div>
       </div>
-
       <div className="row d-flex justify-content-center mt-3">
-        <div className="col-6 ">
-          <Card cardHeader="Add Task">
+        <div className="col-6">
+          <Card cardHeader="Edit Task">
             <form onSubmit={formik.handleSubmit} className="ps-5 pe-5 pt-5">
               <div className="pb-0 mb-0">
                 <FormInput
@@ -193,7 +205,17 @@ const AddTask = () => {
                   buttonType="submit"
                   isDiasbled={formik.isSubmitting}
                 >
-                  ADD TASK
+                  SUBMIT
+                </Button>
+                <Button
+                  variant="secondary"
+                  buttonSize="block"
+                  buttonType="button"
+                  onClick={() => {
+                    navigate(-1);
+                  }}
+                >
+                  CANCEL
                 </Button>
               </div>
             </form>
@@ -204,4 +226,4 @@ const AddTask = () => {
   );
 };
 
-export default AddTask;
+export default EditTask;

@@ -1,11 +1,22 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Card from "../components/Card";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { firestore } from "../firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { format, startOfDay, endOfDay } from "date-fns";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import { AuthContext } from "../context/AuthContext";
 
 const TodayTask = () => {
   const [unFilteredTaskList, setUnFilteredTaskList] = useState([]);
@@ -13,6 +24,16 @@ const TodayTask = () => {
   const [filter, setFilter] = useState("all");
   const [error, setError] = useState(false);
   const [filterButton, setFilterButton] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { editAlert } = location.state || false;
+  const [showEditAlert, setShowEditAlert] = useState(editAlert);
+
+  const currentUser = useContext(AuthContext); 
+
+  const MySwal = withReactContent(Swal);
+
+  // const [taskList, setTaskList] = useState([]);
 
   const formDateTime = (datetimeString) => {
     const datetime = new Date(datetimeString);
@@ -33,6 +54,8 @@ const TodayTask = () => {
     console.log(formattedDateTime); // Output: 5/18/2023, 4:19:00 PM
   };
   const fetchTodaysTask = async () => {
+    setUnFilteredTaskList([]);
+    setFiteredTaskList([]);
     setError(false);
     // Get today's date in the desired format (e.g., 2023-05-18T15:16)
     const today = new Date();
@@ -48,12 +71,15 @@ const TodayTask = () => {
     const q = query(
       tasksCollectionRef,
       where("dueDate", ">=", startDateFormat),
-      where("dueDate", "<=", endDateFormat)
+      where("dueDate", "<=", endDateFormat),
+      where("userId", "==", currentUser.uid)
     );
+   
     // Execute the query
     // Execute the query
     const querySnapshot = await getDocs(q);
-    const list = [];
+    const tasks = [];
+   
 
     // Check if there are no matching documents
     if (querySnapshot.empty) {
@@ -66,7 +92,7 @@ const TodayTask = () => {
         const data = doc.data();
         // Process the task as needed
         // console.log("Idddddddddddddddd",data)
-        list.push({
+        tasks.push({
           key: doc.id,
           userId: data.userId,
           title: data.title,
@@ -76,11 +102,11 @@ const TodayTask = () => {
           status: data.status,
         });
 
-        setFiteredTaskList(list);
+        setFiteredTaskList(tasks);
       });
     }
 
-    setUnFilteredTaskList(list);
+    setUnFilteredTaskList(tasks);
   };
 
   const filterTaskHandler = (filterType) => {
@@ -112,11 +138,72 @@ const TodayTask = () => {
   const filterButtonHandler = () => {
     if (!filterButton) {
       setFilterButton(true);
-    } 
+    }
     if (filterButton) {
       setFilterButton(false);
     }
-  }
+  };
+
+  const handleTaskStatusChange = async (taskId, newStatus) => {
+    try {
+      // Update the task status in Firestore
+      const taskDocRef = doc(firestore, "tasks", taskId);
+      await updateDoc(taskDocRef, { status: newStatus });
+
+      fetchTodaysTask();
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      // Handle the error (e.g., show an error message to the user)
+    }
+  };
+
+  const editTaskHandler = (task) => {
+    const source = {
+      source: "TodayTaskComponent",
+    };
+    navigate(`/edit-task/${task.key}`, {
+      state: { task, source },
+    });
+  };
+
+  const deleteTaskHandler = async (taskId) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Get a reference to the task document
+        const taskRef = doc(firestore, "tasks", taskId);
+
+        // Delete the task document
+        await deleteDoc(taskRef);
+
+        console.log("Task deleted successfully");
+        Swal.fire("Deleted!", "Your file has been deleted.", "success");
+
+        // Update the unFilteredTaskList state by removing the deleted task
+        setUnFilteredTaskList((prevList) =>
+          prevList.filter((task) => task.key !== taskId)
+        );
+        fetchTodaysTask();
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        Swal.fire("Error", "Failed to delete task", "error");
+      }
+    }
+  };
+
+  const dismissEditAlert = () => {
+    history.replace({ state: { showAlert: false } });
+  };
+
   useEffect(() => {
     fetchTodaysTask();
     filterTaskHandler("all");
@@ -147,20 +234,25 @@ const TodayTask = () => {
       >
         <div className="d-flex  justify-content-between">
           <h5 className="mb-1">Title: {task.title}</h5>
-          <small className="">
-            <strong>Priority:</strong>{" "}
-            <span
-              className={`${
-                task.priority === "high"
-                  ? "bg-danger"
-                  : task.priority === "medium"
-                  ? "bg-warning"
-                  : "bg-success"
-              } text-light p-1 `}
-            >
-              {task.priority}
-            </span>
-          </small>
+          <div className="d-flex justify-content-end">
+            <div className="ms-2 me-2">
+              <button
+                className="btn btn-sm btn-info float-end"
+                onClick={editTaskHandler.bind(null, task)}
+              >
+                <FontAwesomeIcon icon={"edit"} />
+              </button>
+            </div>
+
+            <div className="me-2">
+              <button
+                className="btn btn-sm btn-danger float-end"
+                onClick={deleteTaskHandler.bind(null, task.key)}
+              >
+                <FontAwesomeIcon icon={"trash-can"} />
+              </button>
+            </div>
+          </div>
         </div>
         <p className="mb-1">
           <strong>Description: </strong>
@@ -170,38 +262,51 @@ const TodayTask = () => {
           <strong>Due Date: </strong>
           {task.dueDate}
         </p>
-        <p className="mb-1">
+        <div className="">
+          <strong>Priority:</strong>{" "}
+          <span
+            className={`${
+              task.priority === "high"
+                ? "bg-danger"
+                : task.priority === "medium"
+                ? "bg-warning"
+                : "bg-success"
+            } text-light p-1 `}
+          >
+            {task.priority}
+          </span>
+        </div>
+        <div className="mb-1">
           <div className="row">
             <div className="col-6">
-              <strong>
-                Status:{" "}
-                <span
-                  className={`${
-                    task.status === "pending"
-                      ? "bg-warning"
-                      : task.status === "in-progress"
-                      ? "bg-primary"
-                      : "bg-success"
-                  } text-light p-1 `}
-                >
-                  {task.status}
-                </span>
-              </strong>
+              <label className="mb-1">
+                <strong>Status:</strong>{" "}
+              </label>
+              <select
+                name=""
+                id=""
+                className="form-control form-select"
+                value={task.status}
+                onChange={(event) =>
+                  handleTaskStatusChange(task.key, event.target.value)
+                }
+              >
+                <option value="pending">Pending</option>
+                <option value="in-progress">In-Progress</option>
+                <option value="complete">Complete</option>
+              </select>
             </div>
 
-            <div className="col-6 d-flex-justify-content-end">
-              <input
-                className="form-check-input float-end"
-                type="checkbox"
-                value=""
-                id={task.id}
-                data-bs-toggle="tooltip"
-                data-bs-placement="top"
-                title="Mark as completed"
-              />
-            </div>
+            {/* <div className="col-6 d-flex-justify-content-end mt-3">
+              <button
+                className="btn btn-sm btn-info float-end"
+                onClick={editTaskHandler.bind(null, task)}
+              >
+                <FontAwesomeIcon icon={"edit"} />
+              </button>
+            </div> */}
           </div>
-        </p>
+        </div>
         <div className="divider"></div>
       </div>
     ));
@@ -210,10 +315,12 @@ const TodayTask = () => {
   if (filteredTaskList.length === 0) {
     taskListView = (
       <div className="alert alert-warning" role="alert">
-        No tasks are {filter}
+        No tasks found for {filter}
       </div>
     );
   }
+
+  
   return (
     <>
       <Navbar>
@@ -243,10 +350,32 @@ const TodayTask = () => {
           </Link>
         </li>
       </Navbar>
+      {showEditAlert && (
+        <div className="row d-flex justify-content-end mt-3 me-3">
+          <div className="col-4">
+            <div
+              className={`alert alert-success alert-dismissible fade${
+                showEditAlert ? "show" : ""
+              }`}
+              role="alert"
+            >
+              Task Edited Successfully!
+              <button
+                className="btn btn-outline float-end p-0 m-0 btn-md fs-6"
+                onClick={() => {
+                  setShowEditAlert(false);
+                }}
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="row d-flex justify-content-center mt-5">
         <div className="col-6">
           <Card cardHeader="Today's Task">
-            <div className="dropdown   mt-0 float-end position-relative">
+            <div className="dropdown mt-0 float-end position-relative">
               <button
                 className="btn btn-primary dropdown-toggle"
                 type="button"
@@ -258,7 +387,9 @@ const TodayTask = () => {
                 <FontAwesomeIcon icon={"filter"} />
               </button>
               <ul
-                className={`dropdown-menu position-absolute ${filterButton? "show": ""}`}
+                className={`dropdown-menu position-absolute ${
+                  filterButton ? "show" : ""
+                }`}
                 aria-labelledby="dropdownMenuButton1"
                 style={{ zIndex: 999 }}
               >

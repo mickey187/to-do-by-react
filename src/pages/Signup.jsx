@@ -5,14 +5,11 @@ import FormInput from "../components/FormInput";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { auth } from "../firebase";
-import {
-  createUserWithEmailAndPassword,
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, sendSignInLinkToEmail } from "firebase/auth";
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 import withReactContent from "sweetalert2-react-content";
-import {useNavigate, Link} from "react-router-dom"
-
+import { useNavigate, Link } from "react-router-dom";
 
 const Signup = () => {
   const [hasUserSignedUp, setHasUserSignedUp] = useState(null);
@@ -50,6 +47,23 @@ const Signup = () => {
     });
   };
 
+  const actionCodeSettings = {
+    // URL you want to redirect back to. The domain (www.example.com) for this
+    // URL must be in the authorized domains list in the Firebase Console.
+    url: "https://todo.bunaweb.com",
+    // This must be true.
+    handleCodeInApp: true,
+    iOS: {
+      bundleId: "com.example.ios",
+    },
+    android: {
+      packageName: "com.example.android",
+      installApp: true,
+      minimumVersion: "12",
+    },
+    dynamicLinkDomain: "https://todo.bunaweb.com/signup",
+  };
+
   useEffect(() => {
     if (hasUserSignedUp === true) {
       sweetAlertSuccess();
@@ -74,14 +88,16 @@ const Signup = () => {
   const signUpSubmitHandler = async (values, { setSubmitting }) => {
     try {
       setHasUserSignedUp(null);
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-      const user = userCredential.user;
+      const userSignUp = await sendSignInLinkToEmail(auth, values.email,actionCodeSettings);
+      console.log(userSignUp);
+      // const userCredential = await createUserWithEmailAndPassword(
+      //   auth,
+      //   values.email,
+      //   values.password
+      // );
+      // const user = userCredential.user;
       // setHasUserSignedUp(true);
-      navigate('/home')
+      // navigate("/home");
       // sweetAlertSuccess();
 
       // console.log(`User with email ${user.email} created successfully.`);
@@ -185,10 +201,9 @@ const Signup = () => {
                 </Button>
               </div>
 
-              
-            <div className="p-1 text-center mt-4">
-              Already have an account?<Link to="/login"> Login</Link>
-            </div>
+              <div className="p-1 text-center mt-4">
+                Already have an account?<Link to="/login"> Login</Link>
+              </div>
             </Card>
           </form>
         </div>

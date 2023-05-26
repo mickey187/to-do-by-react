@@ -90,6 +90,7 @@ const Signup = () => {
       setHasUserSignedUp(null);
       const userSignUp = await sendSignInLinkToEmail(auth, values.email,actionCodeSettings);
       console.log(userSignUp);
+      // trying the githubworkflow
       // const userCredential = await createUserWithEmailAndPassword(
       //   auth,
       //   values.email,

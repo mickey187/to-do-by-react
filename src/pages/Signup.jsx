@@ -121,9 +121,23 @@ const Signup = () => {
 
   return (
     <div>
-      <div className="row mt-5 d-flex justify-content-center align-items-center vh-100">
-        <div className="col-md-6">
-          <form onSubmit={formik.handleSubmit}>
+      <div className="row mt-5  mb-5 pb-5 d-flex justify-content-center g-0" style={{ height: "85vh" }}>
+      <div
+        className="col-md-3 d-flex align-items-stretch justify-content-center p-3"
+        style={{ backgroundColor: "#3C37FF" }}
+      >
+        <div className="text-break">
+          <p className="text-light text-center mt-5 display-4">TO-DO</p>
+          <p className="text-light text-center mt-5">
+            Stay on Track, Achieve Your Goals
+          </p>
+          <p className="text-light  text-center mt-5">
+          Stay focused, stay motivated, and stay on track with our todo app. Set goals, track progress, and accomplish more by effectively managing your tasks.
+          </p>
+        </div>
+      </div>
+        <div className="col-md-6 col-sm-4 bg-warning d-flex align-items-stretch">
+          <form onSubmit={formik.handleSubmit} className="w-100">
             <Card cardHeader="Signup">
               <div className="pb-0 mb-0 ">
                 <FormInput

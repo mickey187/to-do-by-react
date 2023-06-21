@@ -53,7 +53,7 @@ const Login = (props) => {
 
   return (
     <div
-      className="row mt-5 mb-5 pb-5 d-flex justify-content-center"
+      className="row mt-3 mb-5 pb-5 g-0 d-flex justify-content-center"
       style={{ height: "85vh" }}
     >
       <div
@@ -66,7 +66,9 @@ const Login = (props) => {
             Stay on Track, Achieve Your Goals
           </p>
           <p className="text-light  text-center mt-5">
-          Stay focused, stay motivated, and stay on track with our todo app. Set goals, track progress, and accomplish more by effectively managing your tasks.
+            Stay focused, stay motivated, and stay on track with our todo app.
+            Set goals, track progress, and accomplish more by effectively
+            managing your tasks.
           </p>
         </div>
       </div>
@@ -114,12 +116,13 @@ const Login = (props) => {
                   LOGIN
                 </Button>
               </div>
-              <div className="d-flex justify-content-between">
-                <hr className="divider" />
-                <span className="or-text">or</span>
-                <hr />
+              <div className="d-flex justify-content-between align-items-center ps-5 pe-5 mt-3 mb-3">
+                <hr className="flex-grow-1 mr-3 me-2" />
+                <span className="text-muted">or</span>
+                <hr className="flex-grow-1 ms-2 ml-3" />
               </div>
-              <div className="d-grid gap-2 mx-auto ps-3 pe-3 pt-5">
+
+              <div className="d-grid gap-2 mx-auto ps-3 pe-3 pt-3">
                 <div className="row">
                   <div className="col-4 d-flex justify-content-end">
                     <Button
